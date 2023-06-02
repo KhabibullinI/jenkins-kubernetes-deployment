@@ -5,13 +5,17 @@ pipeline {
     dockerImage = ""
   }
 
-  agent any
+  agent {
+      label 'my-jenkins-agent-nodejs'
+  }
 
   stages {
 
     stage('Checkout Source') {
       steps {
-        git 'https://github.com/KhabibullinI/jenkins-kubernetes-deployment'
+        git branch: 'main',
+            credentialsId: 'github-credential',
+            url: 'https://github.com/KhabibullinI/jenkins-kubernetes-deployment'
       }
     }
 
@@ -36,10 +40,18 @@ pipeline {
       }
     }
 
-    stage('Deploying React.js container to Kubernetes') {
+    stage('Deploying React.js container to.Kubernetes') {
       steps {
-        script {
-          kubernetesDeploy(configs: "deployment.yaml", "service.yaml")
+          sshagent(['k8s']) {
+            sh 'scp -r -o StrictHostKeyChecking=no deployment.yaml service.yaml ilshat@172.27.106.213:/home/ilshat/'
+          script {
+            try{
+                sh " ssh ilshat@172.27.106.213 kubectl apply -f ."
+            }catch(error){
+                sh "ssh ilshat@172.27.106.213 kubectl create -f ."
+            }
+          }
+          
         }
       }
     }
